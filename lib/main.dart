@@ -119,13 +119,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
               .select('id')
               .eq('studentId', studentIdController.text);
 
-          print(student[0]['id']);
-
           await Supabase.instance.client.from('attendances').insert({
             'date': keys[0],
             'studentId': student[0]['id'],
-            'courseId': keys[1],
-            'registerId': keys[2],
+            'registerId': keys[1],
             'status': 'Present'
           });
 
