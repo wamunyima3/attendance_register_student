@@ -11,7 +11,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
-  var supabase = Supabase.instance.client;
+  final supabase =
+      Supabase.instance.client; // Use 'final' for instance variables
   bool isLoading = false;
 
   @override
@@ -52,7 +53,6 @@ class _LoginPageState extends State<LoginPage> {
                             });
 
                             final email = _emailController.text;
-                            final supabase = Supabase.instance.client;
                             final route = MaterialPageRoute(
                               builder: (context) =>
                                   VerifyOtpScreen(email: email),
@@ -64,7 +64,8 @@ class _LoginPageState extends State<LoginPage> {
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Unexpected error occurred $e'),
+                                  content:
+                                      Text('Unexpected error occurred: $e'),
                                   backgroundColor:
                                       Theme.of(context).colorScheme.error,
                                 ),

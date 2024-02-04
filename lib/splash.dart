@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:attendance_register_student/login.dart';
 import 'package:attendance_register_student/main.dart';
+import 'package:attendance_register_student/password.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -31,11 +31,21 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: 
-      (context)=>ScannerScreen(user: session.user)));
+      final studentResponse = await Supabase.instance.client
+          .from('students')
+          .select('email')
+          .eq('email', '${session!.user.email}');
+
+      if (studentResponse.isNotEmpty) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (context) => ScannerScreen(user: session.user)));
+      }else{
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const Password()));
+      }
     } else {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: 
-      (context)=>const LoginPage()));
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const Password()));
     }
   }
 

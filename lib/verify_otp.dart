@@ -58,9 +58,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                               type: OtpType.email,
                             );
 
-                            final session =
-                                Supabase.instance.client.auth.currentSession;
-                            if (session!.user.userMetadata!.isEmpty) {
+                            final studentResponse = await Supabase.instance.client
+                                .from('students')
+                                .select('email')
+                                .eq('email', widget.email);
+
+                            if (studentResponse.isEmpty) {
                               navigator.pushReplacement(MaterialPageRoute(
                                   builder: (context) => RegistrationPage()));
                             } else {
@@ -70,8 +73,8 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                               navigator.pushReplacement(route);
                             }
                           } catch (err) {
-                            scaffoldMessenger.showSnackBar(const SnackBar(
-                                content: Text('Something went wrong')));
+                            scaffoldMessenger.showSnackBar(SnackBar(
+                                content: Text('Something went wrong $err')));
                           } finally {
                             setState(() {
                               isLoading = false;

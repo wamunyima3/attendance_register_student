@@ -1,4 +1,5 @@
 import 'package:attendance_register_student/login.dart';
+import 'package:attendance_register_student/password.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -33,7 +34,8 @@ class MyApp extends StatelessWidget {
 class ScannerScreen extends StatefulWidget {
   final User user;
 
-  ScannerScreen({Key? key, required this.user}) : super(key: key);
+  const ScannerScreen({Key? key, required this.user}) : super(key: key);
+
   @override
   _ScannerScreenState createState() => _ScannerScreenState();
 }
@@ -50,12 +52,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
         title: Text('Attendance Register'),
         actions: [
           IconButton(
-              onPressed: () async {
-                await Supabase.instance.client.auth.signOut();
-                Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginPage()));
-              },
-              icon: const Icon(Icons.logout))
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const Password()),
+              );
+            },
+            icon: const Icon(Icons.logout),
+          )
         ],
       ),
       body: Stack(
@@ -110,13 +114,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
           final student = await Supabase.instance.client
               .from('students')
               .select('id')
-              .eq('email', '${widget.user.email}');
+              .eq('email', '${widget.user.email}')
+              .single();
 
           await Supabase.instance.client.from('attendances').insert({
             'date': keys[0],
-            'studentId': student[0]['id'],
+            'studentId': student['id'],
             'registerId': keys[1],
-            'status': 'Present'
+            'status': 'Present',
           });
 
           _showSnackbar('Attendance Present');
