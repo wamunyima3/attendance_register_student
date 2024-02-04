@@ -1,4 +1,3 @@
-import 'package:attendance_register_student/login.dart';
 import 'package:attendance_register_student/password.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/material.dart';
@@ -14,10 +13,12 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppcmNocXhlZG9laWJqaG50b21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDU5NTMwMjAsImV4cCI6MjAyMTUyOTAyMH0.-GeclxYt7ikR-2-baUXEj9cVktVmYtMQk76aJY-GW0Y',
   );
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -26,7 +27,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.blue,
         fontFamily: 'Roboto',
       ),
-      home: SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }
@@ -49,7 +50,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Attendance Register'),
+        title: const Text('Attendance Register'),
         actions: [
           IconButton(
             onPressed: () async {
@@ -82,12 +83,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: Icon(Icons.flip_camera_android),
+                  icon: const Icon(Icons.flip_camera_android),
                   onPressed: _flipCamera,
                   color: Colors.white,
                 ),
                 IconButton(
-                  icon: Icon(Icons.flash_on),
+                  icon: const Icon(Icons.flash_on),
                   onPressed: _toggleFlash,
                   color: Colors.white,
                 ),

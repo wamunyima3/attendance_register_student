@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -19,8 +21,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   _loadWidget() {
-    var _duration = Duration(seconds: splashDelay);
-    return Timer(_duration, _redirect);
+    var duration = Duration(seconds: splashDelay);
+    return Timer(duration, _redirect);
   }
 
   Future<void> _redirect() async {
@@ -34,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final studentResponse = await Supabase.instance.client
           .from('students')
           .select('email')
-          .eq('email', '${session!.user.email}');
+          .eq('email', '${session.user.email}');
 
       if (studentResponse.isNotEmpty) {
         Navigator.of(context).pushReplacement(MaterialPageRoute(

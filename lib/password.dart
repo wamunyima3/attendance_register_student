@@ -78,8 +78,6 @@ class _PasswordState extends State<Password> {
                                 .select('password')
                                 .eq('lecturer_id', lecturerId['id']);
 
-                            print(response[0]['password']);
-
                             // If it's correct, open the login page
                             if (response.isEmpty) {
                               scaffoldMessenger.showSnackBar(const SnackBar(
@@ -96,7 +94,6 @@ class _PasswordState extends State<Password> {
                               ));
                             }
                           } catch (err) {
-                            print('Error: $err');
                             scaffoldMessenger.showSnackBar(SnackBar(
                               content: Text('Something went wrong $err'),
                             ));

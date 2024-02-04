@@ -65,7 +65,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
                             if (studentResponse.isEmpty) {
                               navigator.pushReplacement(MaterialPageRoute(
-                                  builder: (context) => RegistrationPage()));
+                                  builder: (context) => const RegistrationPage()));
                             } else {
                               final route = MaterialPageRoute(
                                   builder: (_) =>

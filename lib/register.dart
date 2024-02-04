@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationPage extends StatefulWidget {
-  RegistrationPage({Key? key}) : super(key: key);
+  const RegistrationPage({Key? key}) : super(key: key);
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
@@ -88,7 +88,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               isLoading = true;
                             });
 
-                            final navigator = Navigator.of(context);
                             final scaffoldMessenger =
                                 ScaffoldMessenger.of(context);
 
@@ -97,8 +96,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   .from('programs')
                                   .select('id')
                                   .eq('name', _programController.text);
-
-                              print(response);
 
                               int programId = 0;
 
