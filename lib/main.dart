@@ -1,3 +1,5 @@
+import 'package:attendance_register_student/login.dart';
+import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,12 +25,15 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.blue,
         fontFamily: 'Roboto',
       ),
-      home: ScannerScreen(),
+      home: SplashScreen(),
     );
   }
 }
 
 class ScannerScreen extends StatefulWidget {
+  final User user;
+
+  ScannerScreen({Key? key, required this.user}) : super(key: key);
   @override
   _ScannerScreenState createState() => _ScannerScreenState();
 }
@@ -36,67 +41,55 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen> {
   final GlobalKey _qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? _controller;
-  TextEditingController studentIdController = TextEditingController();
   bool _firstScanDetected = false;
-  bool _showTextField = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Attendance Register'),
+        actions: [
+          IconButton(
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+                Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const LoginPage()));
+              },
+              icon: const Icon(Icons.logout))
+        ],
       ),
-      body: Column(
-        children: [
-          if (_showTextField)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: studentIdController,
-                decoration: InputDecoration(labelText: 'Student ID'),
-              ),
+      body: Stack(
+        children: <Widget>[
+          QRView(
+            key: _qrKey,
+            onQRViewCreated: _onQRViewCreated,
+            overlay: QrScannerOverlayShape(
+              borderRadius: 10,
+              borderLength: 20,
+              borderWidth: 10,
+              cutOutSize: MediaQuery.of(context).size.width * 0.8,
             ),
-          Expanded(
-            child: Stack(
-              children: <Widget>[
-                QRView(
-                  key: _qrKey,
-                  onQRViewCreated: _onQRViewCreated,
-                  overlay: QrScannerOverlayShape(
-                    borderRadius: 10,
-                    borderLength: 20,
-                    borderWidth: 10,
-                    cutOutSize: MediaQuery.of(context).size.width * 0.8,
-                  ),
+          ),
+          Positioned(
+            top: 40.0,
+            left: 16.0,
+            right: 16.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.flip_camera_android),
+                  onPressed: _flipCamera,
+                  color: Colors.white,
                 ),
-                Positioned(
-                  top: 40.0,
-                  left: 16.0,
-                  right: 16.0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.flip_camera_android),
-                        onPressed: _flipCamera,
-                        color: Colors.white,
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.flash_on),
-                        onPressed: _toggleFlash,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
+                IconButton(
+                  icon: Icon(Icons.flash_on),
+                  onPressed: _toggleFlash,
+                  color: Colors.white,
                 ),
               ],
             ),
           ),
-          if (_showTextField)
-            ElevatedButton(
-              onPressed: _submitAttendance,
-              child: Text('Submit'),
-            ),
         ],
       ),
     );
@@ -117,7 +110,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           final student = await Supabase.instance.client
               .from('students')
               .select('id')
-              .eq('studentId', studentIdController.text);
+              .eq('email', '${widget.user.email}');
 
           await Supabase.instance.client.from('attendances').insert({
             'date': keys[0],
@@ -145,12 +138,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
     if (_controller != null) {
       _controller!.toggleFlash();
     }
-  }
-
-  void _submitAttendance() {
-    setState(() {
-      _showTextField = false;
-    });
   }
 
   void _showSnackbar(String message) {
