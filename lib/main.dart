@@ -55,9 +55,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
           IconButton(
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const Password()),
-              );
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const Password()),
+                );
+              }
             },
             icon: const Icon(Icons.logout),
           )

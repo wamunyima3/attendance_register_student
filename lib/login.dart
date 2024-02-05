@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
-  var lecturerId;
-  LoginPage({Key? key, required this.lecturerId}) : super(key: key);
+  final int lecturerId;
+  const LoginPage({Key? key, required this.lecturerId}) : super(key: key);
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -55,22 +55,28 @@ class _LoginPageState extends State<LoginPage> {
 
                             final email = _emailController.text;
                             final route = MaterialPageRoute(
-                              builder: (context) =>
-                                  VerifyOtpScreen(email: email, lecturerId: widget.lecturerId),
+                              builder: (context) => VerifyOtpScreen(
+                                  email: email, lecturerId: widget.lecturerId),
                             );
 
                             try {
+                          
                               await supabase.auth.signInWithOtp(email: email);
-                              Navigator.pushReplacement(context, route);
+
+                              if (mounted) {
+                                Navigator.pushReplacement(context, route);
+                              }
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                      Text('Unexpected error occurred: $e'),
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.error,
-                                ),
-                              );
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text('Unexpected error occurred: $e'),
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.error,
+                                  ),
+                                );
+                              }
                             } finally {
                               setState(() {
                                 isLoading = false;

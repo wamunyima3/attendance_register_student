@@ -39,11 +39,15 @@ class _SplashScreenState extends State<SplashScreen> {
           .eq('email', '${session.user.email}');
 
       if (studentResponse.isNotEmpty) {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) => ScannerScreen(user: session.user)));
-      }else{
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const Password()));
+        if (mounted) {
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (context) => ScannerScreen(user: session.user)));
+        }
+      } else {
+        if(mounted){
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const Password()));
+        }
       }
     } else {
       Navigator.of(context).pushReplacement(
@@ -55,13 +59,13 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: Container(
+        body: SizedBox(
           height: MediaQuery.of(context).size.height,
           width: MediaQuery.of(context).size.width,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Container(
+              SizedBox(
                 height: MediaQuery.of(context).size.height * 0.4,
                 child: const Image(
                   image: AssetImage(

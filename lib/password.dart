@@ -66,7 +66,6 @@ class _PasswordState extends State<Password> {
 
                           try {
                             // Get the lecturer's password
-
                             final lecturerId = await Supabase.instance.client
                                 .from('lecturers')
                                 .select('id')

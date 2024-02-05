@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationPage extends StatefulWidget {
-  var lecturerId;
-  RegistrationPage({Key? key, required this.lecturerId}) : super(key: key);
+  final int lecturerId;
+  const RegistrationPage({Key? key, required this.lecturerId})
+      : super(key: key);
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
@@ -103,7 +104,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               final courseId = await Supabase.instance.client
                                   .from('courses')
                                   .select('id')
-                                  .eq('lecturerId',widget.lecturerId).single();
+                                  .eq('lecturerId', widget.lecturerId)
+                                  .single();
 
                               if (response.isEmpty) {
                                 var newProgram = await Supabase.instance.client
@@ -130,10 +132,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                 'program_id': programId,
                               });
 
-                              Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          ScannerScreen(user: session.user)));
+                              if (mounted) {
+                                Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            ScannerScreen(user: session.user)));
+                              }
                             } catch (err) {
                               scaffoldMessenger.showSnackBar(SnackBar(
                                   content: Text('Something went wrong $err')));
