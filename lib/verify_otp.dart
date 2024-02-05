@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
-  VerifyOtpScreen({Key? key, required this.email}) : super(key: key);
+  var lecturerId;
+  VerifyOtpScreen({Key? key, required this.email, required this.lecturerId})
+      : super(key: key);
 
   final String email;
 
@@ -58,14 +60,16 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                               type: OtpType.email,
                             );
 
-                            final studentResponse = await Supabase.instance.client
+                            final studentResponse = await Supabase
+                                .instance.client
                                 .from('students')
                                 .select('email')
                                 .eq('email', widget.email);
 
                             if (studentResponse.isEmpty) {
                               navigator.pushReplacement(MaterialPageRoute(
-                                  builder: (context) => const RegistrationPage()));
+                                  builder: (context) => RegistrationPage(
+                                      lecturerId: widget.lecturerId)));
                             } else {
                               final route = MaterialPageRoute(
                                   builder: (_) =>

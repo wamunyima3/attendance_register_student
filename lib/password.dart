@@ -84,9 +84,10 @@ class _PasswordState extends State<Password> {
                                 content: Text(
                                     'Request for password from your lecturer'),
                               ));
-                            } else if (response[0]['password'] == _lecturerPassword.text) {
+                            } else if (response[0]['password'] ==
+                                _lecturerPassword.text) {
                               navigator.pushReplacement(MaterialPageRoute(
-                                builder: (context) => const LoginPage(),
+                                builder: (context) => LoginPage(lecturerId: lecturerId['id']),
                               ));
                             } else {
                               scaffoldMessenger.showSnackBar(const SnackBar(

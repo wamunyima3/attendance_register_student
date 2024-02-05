@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({Key? key}) : super(key: key);
+  var lecturerId;
+  RegistrationPage({Key? key, required this.lecturerId}) : super(key: key);
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
@@ -99,12 +100,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
                               int programId = 0;
 
+                              final courseId = await Supabase.instance.client
+                                  .from('courses')
+                                  .select('id')
+                                  .eq('lecturerId',widget.lecturerId).single();
+
                               if (response.isEmpty) {
                                 var newProgram = await Supabase.instance.client
                                     .from('programs')
                                     .insert({
                                   'name': _programController.text,
-                                  'courseId': 21
+                                  'courseId': courseId['id'],
                                 }).select();
 
                                 programId = newProgram[0]['id'];

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  var lecturerId;
+  LoginPage({Key? key, required this.lecturerId}) : super(key: key);
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -55,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
                             final email = _emailController.text;
                             final route = MaterialPageRoute(
                               builder: (context) =>
-                                  VerifyOtpScreen(email: email),
+                                  VerifyOtpScreen(email: email, lecturerId: widget.lecturerId),
                             );
 
                             try {
