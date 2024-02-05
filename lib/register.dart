@@ -110,7 +110,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                     .from('programs')
                                     .insert({
                                   'name': _programController.text,
-                                  'courseId': courseId['id'],
+                                  'course_id': courseId['id'],
                                 }).select();
 
                                 programId = newProgram[0]['id'];
