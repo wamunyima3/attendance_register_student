@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'package:attendance_register_student/main.dart';
-import 'package:attendance_register_student/password.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:attendance_register_student/main.dart';
+import 'package:attendance_register_student/password.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -25,8 +26,50 @@ class _SplashScreenState extends State<SplashScreen> {
     var duration = Duration(seconds: splashDelay);
     await Future.delayed(duration);
     if (mounted) {
+      _checkInternetConnection();
+    }
+  }
+
+  void _checkInternetConnection() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      // No internet connection
+      _showOfflineWidget();
+    } else {
+      // Internet connection is present
       _redirect();
     }
+  }
+
+  void _showOfflineWidget() {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // Prevents dismissing the dialog by tapping outside
+      builder: (context) => AlertDialog(
+        title: const Icon(
+          Icons.wifi_off,
+          size: 60,
+          color: Colors.red,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'You are offline',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _restartApp();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _redirect() async {
@@ -53,7 +96,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToScannerScreen(String email) {
-    Navigator.of(context).pushReplacement(
+    Navigator.pushReplacement(
+      context,
       MaterialPageRoute(
         builder: (context) => ScannerScreen(email: email),
       ),
@@ -61,11 +105,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToPassword() {
-    Navigator.of(context).pushReplacement(
+    Navigator.pushReplacement(
+      context,
       MaterialPageRoute(
         builder: (context) => const Password(),
       ),
     );
+  }
+
+  void _restartApp() {
+    // Restart the entire app
+    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+      Navigator.of(context).pop(); // Dismiss the previous dialog, if any
+      var connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult == ConnectivityResult.none) {
+        _showOfflineWidget(); // Show offline dialog if still no internet after retry
+      } else {
+        _redirect(); // Redirect if internet connection is present
+      }
+    });
   }
 
   @override
