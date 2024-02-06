@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:attendance_register_student/main.dart';
 import 'package:attendance_register_student/password.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,39 +21,51 @@ class _SplashScreenState extends State<SplashScreen> {
     _loadWidget();
   }
 
-  _loadWidget() {
+  _loadWidget() async {
     var duration = Duration(seconds: splashDelay);
-    return Timer(duration, _redirect);
+    await Future.delayed(duration);
+    if (mounted) {
+      _redirect();
+    }
   }
 
   Future<void> _redirect() async {
-    await Future.delayed(Duration.zero);
-    if (!mounted) {
-      return;
-    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String storedEmail = prefs.getString('user_email') ?? 'No email';
 
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      final studentResponse = await Supabase.instance.client
-          .from('students')
-          .select('email')
-          .eq('email', '${session.user.email}');
+    if (storedEmail != 'No email') {
+      final user = await Supabase.instance.client
+          .from('user')
+          .select('is_logedIn')
+          .eq('email', storedEmail)
+          .single();
 
-      if (studentResponse.isNotEmpty) {
+      if (user.isNotEmpty && user['is_logedIn'] == true) {
         if (mounted) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (context) => ScannerScreen(user: session.user)));
+          _navigateToScannerScreen(storedEmail);
         }
       } else {
-        if(mounted){
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const Password()));
-        }
+        _navigateToPassword();
       }
     } else {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const Password()));
+      _navigateToPassword();
     }
+  }
+
+  void _navigateToScannerScreen(String email) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => ScannerScreen(email: email),
+      ),
+    );
+  }
+
+  void _navigateToPassword() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const Password(),
+      ),
+    );
   }
 
   @override
@@ -66,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
             alignment: Alignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
+                height: MediaQuery.of(context).size.height * 0.1,
                 child: const Image(
                   image: AssetImage(
                     'assets/attendance-logo.png',

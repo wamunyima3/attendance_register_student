@@ -40,6 +40,12 @@ dependencies:
   #database
   supabase_flutter: ^2.3.0
 
+  #local storage
+  shared_preferences: ^2.2.2
+
+  #url
+  url_launcher: ^6.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

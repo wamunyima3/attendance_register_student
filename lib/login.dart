@@ -1,5 +1,7 @@
-import 'package:attendance_register_student/verify_otp.dart';
+import 'package:attendance_register_student/main.dart';
+import 'package:attendance_register_student/register.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,15 +14,19 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
-  final supabase =
-      Supabase.instance.client; // Use 'final' for instance variables
+  final supabase = Supabase.instance.client;
   bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
+    double buttonWidth = MediaQuery.of(context).size.width * 0.9;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login Page'),
+        title: const Text(
+          'Login Page',
+          style: TextStyle(color: Colors.blue),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -31,62 +37,32 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue),
+                SizedBox(
+                  width: buttonWidth,
+                  child: TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blue),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
-                  width: double.infinity,
+                  width: buttonWidth,
                   child: ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            setState(() {
-                              isLoading = true;
-                            });
-
-                            final email = _emailController.text;
-                            final route = MaterialPageRoute(
-                              builder: (context) => VerifyOtpScreen(
-                                  email: email, lecturerId: widget.lecturerId),
-                            );
-
-                            try {
-                          
-                              await supabase.auth.signInWithOtp(email: email);
-
-                              if (mounted) {
-                                Navigator.pushReplacement(context, route);
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content:
-                                        Text('Unexpected error occurred: $e'),
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.error,
-                                  ),
-                                );
-                              }
-                            } finally {
-                              setState(() {
-                                isLoading = false;
-                              });
-                            }
-                          },
+                    onPressed: isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.blue,
                       padding: const EdgeInsets.all(16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4.0),
+                      ),
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(
@@ -96,10 +72,88 @@ class _LoginPageState extends State<LoginPage> {
                         : const Text('Login'),
                   ),
                 ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: _navigateToRegistration,
+                  child: const Text(
+                    "Don't have an account? Register",
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _login() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final email = _emailController.text;
+
+    try {
+      final user =
+          await supabase.from('user').select('*').eq('email', email).single();
+
+      if (user.isEmpty) {
+        throw 'Invalid Email or Register';
+      } else {
+        _storeEmailInPreferences(email);
+        _navigateToScannerScreen(email);
+      }
+    } catch (e) {
+      _showErrorSnackBar('Unexpected error occurred: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _storeEmailInPreferences(String email) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('user_email', email);
+
+    //update is loged in
+    await Supabase.instance.client
+        .from('user')
+        .update({'is_logedIn': true}).eq('email', email);
+  }
+
+  void _navigateToScannerScreen(String email) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => ScannerScreen(email: email),
+      ),
+    );
+  }
+
+  void _navigateToRegistration() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RegistrationPage(lecturerId: widget.lecturerId),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
   }

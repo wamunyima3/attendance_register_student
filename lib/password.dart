@@ -29,10 +29,10 @@ class _PasswordState extends State<Password> {
                 ),
                 child: TextField(
                   controller: _lecturerPassword,
-                  keyboardType: TextInputType.number,
+                  obscureText: true, // Mask the password for security
                   decoration: const InputDecoration(
+                    labelText: 'Lecturer\'s OTP',
                     border: OutlineInputBorder(),
-                    hintText: 'Lecturer\'s OTP',
                   ),
                 ),
               ),
@@ -51,60 +51,16 @@ class _PasswordState extends State<Password> {
                 ),
               ),
               SizedBox(
-                width: double.infinity,
+                width: MediaQuery.of(context).size.width * 0.87,
                 child: ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-
-                          final navigator = Navigator.of(context);
-                          final scaffoldMessenger =
-                              ScaffoldMessenger.of(context);
-
-                          try {
-                            // Get the lecturer's password
-                            final lecturerId = await Supabase.instance.client
-                                .from('lecturers')
-                                .select('id')
-                                .eq('email', _lecturerEmail.text)
-                                .single();
-
-                            final response = await Supabase.instance.client
-                                .from('password')
-                                .select('password')
-                                .eq('lecturer_id', lecturerId['id']);
-
-                            // If it's correct, open the login page
-                            if (response.isEmpty) {
-                              scaffoldMessenger.showSnackBar(const SnackBar(
-                                content: Text(
-                                    'Request for password from your lecturer'),
-                              ));
-                            } else if (response[0]['password'] ==
-                                _lecturerPassword.text) {
-                              navigator.pushReplacement(MaterialPageRoute(
-                                builder: (context) => LoginPage(lecturerId: lecturerId['id']),
-                              ));
-                            } else {
-                              scaffoldMessenger.showSnackBar(const SnackBar(
-                                content: Text('Incorrect password'),
-                              ));
-                            }
-                          } catch (err) {
-                            scaffoldMessenger.showSnackBar(SnackBar(
-                              content: Text('Something went wrong $err'),
-                            ));
-                          } finally {
-                            setState(() {
-                              isLoading = false;
-                            });
-                          }
-                        },
+                  onPressed: isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.blue,
                     padding: const EdgeInsets.all(16.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
                   ),
                   child: isLoading
                       ? const CircularProgressIndicator(
@@ -119,5 +75,50 @@ class _PasswordState extends State<Password> {
         ),
       ),
     );
+  }
+
+  void _submit() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      final lecturerId = await Supabase.instance.client
+          .from('lecturers')
+          .select('id')
+          .eq('email', _lecturerEmail.text)
+          .single();
+      final response = await Supabase.instance.client
+          .from('password')
+          .select('password')
+          .eq('lecturer_id', lecturerId['id']);
+
+      if (response.isEmpty) {
+        scaffoldMessenger.showSnackBar(const SnackBar(
+          content: Text('Request for password from your lecturer'),
+        ));
+      } else if (response[0]['password'] == _lecturerPassword.text) {
+        navigator.pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => LoginPage(lecturerId: lecturerId['id']),
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(const SnackBar(
+          content: Text('Incorrect password'),
+        ));
+      }
+    } catch (err) {
+      scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text('Something went wrong $err'),
+      ));
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:attendance_register_student/main.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -13,19 +14,20 @@ class RegistrationPage extends StatefulWidget {
 
 class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _studentIdController = TextEditingController();
-
   final TextEditingController _nameController = TextEditingController();
-
   final TextEditingController _phoneController = TextEditingController();
-
   final TextEditingController _programController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registration Page'),
+        title: const Text(
+          'Registration',
+          style: TextStyle(color: Colors.blue),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -59,6 +61,18 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
                 const SizedBox(height: 10),
                 TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
                   controller: _phoneController,
                   decoration: const InputDecoration(
                     labelText: 'Phone',
@@ -83,72 +97,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            setState(() {
-                              isLoading = true;
-                            });
-
-                            final scaffoldMessenger =
-                                ScaffoldMessenger.of(context);
-
-                            try {
-                              final response = await Supabase.instance.client
-                                  .from('programs')
-                                  .select('id')
-                                  .eq('name', _programController.text);
-
-                              int programId = 0;
-
-                              final courseId = await Supabase.instance.client
-                                  .from('courses')
-                                  .select('id')
-                                  .eq('lecturerId', widget.lecturerId)
-                                  .single();
-
-                              if (response.isEmpty) {
-                                var newProgram = await Supabase.instance.client
-                                    .from('programs')
-                                    .insert({
-                                  'name': _programController.text,
-                                  'course_id': courseId['id'],
-                                }).select();
-
-                                programId = newProgram[0]['id'];
-                              } else {
-                                programId = response[0]['id'];
-                              }
-                              final session =
-                                  Supabase.instance.client.auth.currentSession;
-
-                              await Supabase.instance.client
-                                  .from('students')
-                                  .insert({
-                                'studentId': _studentIdController.text,
-                                'name': _nameController.text,
-                                'email': session!.user.email,
-                                'phone': _phoneController.text,
-                                'program_id': programId,
-                              });
-
-                              if (mounted) {
-                                Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            ScannerScreen(user: session.user)));
-                              }
-                            } catch (err) {
-                              scaffoldMessenger.showSnackBar(SnackBar(
-                                  content: Text('Something went wrong $err')));
-                            } finally {
-                              setState(() {
-                                isLoading = false;
-                              });
-                            }
-                          },
+                    onPressed: isLoading ? null : _completeProfile,
                     style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.blue,
                       padding: const EdgeInsets.all(16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4.0),
+                      ),
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(
@@ -162,6 +118,87 @@ class _RegistrationPageState extends State<RegistrationPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _completeProfile() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      final response = await Supabase.instance.client
+          .from('programs')
+          .select('id')
+          .eq('name', _programController.text);
+
+      int programId = 0;
+
+      final courseId = await Supabase.instance.client
+          .from('courses')
+          .select('id')
+          .eq('lecturerId', widget.lecturerId)
+          .single();
+
+      if (response.isEmpty) {
+        var newProgram =
+            await Supabase.instance.client.from('programs').insert({
+          'name': _programController.text,
+          'course_id': courseId['id'],
+        }).select();
+
+        programId = newProgram[0]['id'];
+      } else {
+        programId = response[0]['id'];
+      }
+
+      _storeUserEmail();
+      await _insertIntoStudents(programId);
+
+      if (mounted) {
+        _navigateToScannerScreen(_emailController.text);
+      }
+    } catch (err) {
+      scaffoldMessenger
+          .showSnackBar(SnackBar(content: Text('Something went wrong $err')));
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _storeUserEmail() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('user_email', _emailController.text);
+  }
+
+  Future<void> _insertIntoStudents(int programId) async {
+    final user = await Supabase.instance.client
+        .from('user')
+        .insert({
+          'is_logedIn': true,
+          'email': _emailController.text,
+        })
+        .select()
+        .single();
+
+    await Supabase.instance.client.from('students').insert({
+      'studentId': _studentIdController.text,
+      'name': _nameController.text,
+      'user_id': user['id'],
+      'phone': _phoneController.text,
+      'program_id': programId,
+    });
+  }
+
+  void _navigateToScannerScreen(String email) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => ScannerScreen(email: email),
       ),
     );
   }
