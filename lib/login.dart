@@ -38,7 +38,8 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 SizedBox(
-                  width: buttonWidth,
+                  width:
+                      MediaQuery.of(context).size.width * 0.9, // Adjusted width
                   child: TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -53,7 +54,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
-                  width: buttonWidth,
+                  width:
+                      MediaQuery.of(context).size.width * 0.9, // Adjusted width
                   child: ElevatedButton(
                     onPressed: isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(

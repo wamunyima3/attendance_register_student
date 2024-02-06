@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'package:attendance_register_student/location.dart';
 import 'package:attendance_register_student/password.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/gestures.dart';
@@ -69,7 +71,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             'About',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 20, // Adjust the font size as needed
+              fontSize: 20,
             ),
           ),
           content: Column(
@@ -81,29 +83,36 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 text: TextSpan(
                   text: 'Attendance Register\n',
                   style: const TextStyle(
-                    fontSize: 16, // Adjust the font size as needed
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black, // Adjust the text color as needed
+                    color: Colors.black,
                   ),
                   children: <TextSpan>[
                     const TextSpan(
-                      text: '1.0.0\n',
+                      text: 'Version: 1.0.0\n\n',
                       style: TextStyle(
-                        fontSize: 14, // Adjust the font size as needed
+                        fontSize: 14,
                         fontWeight: FontWeight.normal,
                       ),
                     ),
                     const TextSpan(
-                      text: 'Developer: ',
+                      text: 'Developed By:\n',
                       style: TextStyle(
-                        fontSize: 14, // Adjust the font size as needed
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: 'Dr. Siva Asani\n',
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.normal,
                       ),
                     ),
                     TextSpan(
-                      text: 'portfolio-wamunyima.vercel.app',
+                      text: 'Wamunyima Mukelabai',
                       style: const TextStyle(
-                        fontSize: 14, // Adjust the font size as needed
+                        fontSize: 14,
                         color: Colors.blue,
                         decoration: TextDecoration.underline,
                       ),
@@ -134,8 +143,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
               child: const Text(
                 'Close',
                 style: TextStyle(
-                  fontSize: 16, // Adjust the font size as needed
-                  color: Colors.blue, // Adjust the text color as needed
+                  fontSize: 16,
+                  color: Colors.blue,
                 ),
               ),
             ),
@@ -145,11 +154,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  void _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
+  Future<void> _launchURL(String url) async {
+    if (!await launchUrl(Uri.parse(url))) {
+      throw Exception('Could not launch $url');
     }
   }
 
@@ -177,39 +184,43 @@ class _ScannerScreenState extends State<ScannerScreen> {
           )
         ],
       ),
-      body: Stack(
-        children: <Widget>[
-          QRView(
-            key: _qrKey,
-            onQRViewCreated: _onQRViewCreated,
-            overlay: QrScannerOverlayShape(
-              borderRadius: 10,
-              borderLength: 20,
-              borderWidth: 10,
-              cutOutSize: MediaQuery.of(context).size.width * 0.8,
-            ),
-          ),
-          Positioned(
-            top: 40.0,
-            left: 16.0,
-            right: 16.0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.flip_camera_android),
-                  onPressed: _flipCamera,
-                  color: Colors.white,
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          return Stack(
+            children: <Widget>[
+              QRView(
+                key: _qrKey,
+                onQRViewCreated: _onQRViewCreated,
+                overlay: QrScannerOverlayShape(
+                  borderRadius: 10,
+                  borderLength: 20,
+                  borderWidth: 10,
+                  cutOutSize: MediaQuery.of(context).size.width * 0.8,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.flash_on),
-                  onPressed: _toggleFlash,
-                  color: Colors.white,
+              ),
+              Positioned(
+                top: 40.0,
+                left: 16.0,
+                right: 16.0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.flip_camera_android),
+                      onPressed: _flipCamera,
+                      color: Colors.white,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.flash_on),
+                      onPressed: _toggleFlash,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -232,14 +243,32 @@ class _ScannerScreenState extends State<ScannerScreen> {
               .eq('email', widget.email)
               .single();
 
-          await Supabase.instance.client.from('attendances').insert({
-            'date': keys[0],
-            'studentId': student['id'],
-            'registerId': keys[1],
-            'status': 'Present',
-          });
+          //check the coordinates to see proximit
+          //sample data
+          double distanceInMeters =
+              calculateDistance(40.7128, -74.0060, 34.0522, -118.2437);
+          double requiredDistance = 10;
 
-          _showSnackbar('Attendance Present');
+          if (distanceInMeters > requiredDistance) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('Nigga you are not in class'),
+                      //I can say nigga without freely because am black
+                ),
+              );
+            }
+          } else {
+            await Supabase.instance.client.from('attendances').insert({
+              'date': keys[0],
+              'studentId': student['id'],
+              'registerId': keys[1],
+              'status': 'Present',
+            });
+
+            _showSnackbar('Attendance Present');
+          }
         } catch (e) {
           _showSnackbar('Error while inserting data: $e');
         }
@@ -262,10 +291,38 @@ class _ScannerScreenState extends State<ScannerScreen> {
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              message,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
         duration: const Duration(seconds: 5),
       ),
     );
+  }
+
+  double calculateDistance(double latitude1, double longitude1,
+      double latitude2, double longitude2) {
+    var radianConversion = 0.017453292519943295;
+    var cosine = cos;
+    var deltaLatitude = latitude2 - latitude1;
+    var deltaLongitude = longitude2 - longitude1;
+    var angle = 0.5 -
+        cosine(deltaLatitude * radianConversion) / 2 +
+        cosine(latitude1 * radianConversion) *
+            cosine(latitude2 * radianConversion) *
+            (1 - cosine(deltaLongitude * radianConversion)) /
+            2;
+    // Convert distance from kilometers to meters
+    return 1000 * 12742 * asin(sqrt(angle));
   }
 
   @override

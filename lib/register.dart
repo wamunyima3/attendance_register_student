@@ -95,7 +95,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
-                  width: double.infinity,
+                  width:
+                      MediaQuery.of(context).size.width * 0.9, // Adjusted width
                   child: ElevatedButton(
                     onPressed: isLoading ? null : _completeProfile,
                     style: ElevatedButton.styleFrom(
