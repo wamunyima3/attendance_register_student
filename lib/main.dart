@@ -245,17 +245,22 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
           //check the coordinates to see proximit
           //sample data
-          double distanceInMeters =
-              calculateDistance(40.7128, -74.0060, 34.0522, -118.2437);
-          double requiredDistance = 10;
+          final studentLocation = await getLocation(context);
+
+          double distanceInMeters = calculateDistance(
+              studentLocation['latitude'],
+              studentLocation['longitude'],
+              double.parse(keys[3]),
+              double.parse(keys[4]));
+
+          double requiredDistance = double.parse(keys[2]);
 
           if (distanceInMeters > requiredDistance) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content:
-                      Text('Nigga you are not in class'),
-                      //I can say nigga without freely because am black
+                  content: Text('Nigga you are not in class'),
+                  //I can say nigga without freely because am black
                 ),
               );
             }

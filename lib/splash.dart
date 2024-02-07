@@ -115,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _restartApp() {
     // Restart the entire app
-    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       Navigator.of(context).pop(); // Dismiss the previous dialog, if any
       var connectivityResult = await (Connectivity().checkConnectivity());
       if (connectivityResult == ConnectivityResult.none) {

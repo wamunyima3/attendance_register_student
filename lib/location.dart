@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
@@ -19,14 +20,23 @@ class LocationService {
   }
 }
 
-void getLocation() async {
+Future<Map<String, dynamic>> getLocation(BuildContext context) async {
   LocationService locationService = LocationService();
   try {
     Position position = await locationService.getCurrentLocation();
     double latitude = position.latitude;
     double longitude = position.longitude;
     print('Latitude: $latitude, Longitude: $longitude');
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+    };
   } catch (e) {
-    print('Error getting current location: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error getting current location: $e'),
+      ),
+    );
+    return {'error': e.toString()};
   }
 }
