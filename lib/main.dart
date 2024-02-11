@@ -237,10 +237,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
         try {
           List<String> keys = scanData.code!.split('\n');
+          final user = await Supabase.instance.client
+              .from('user')
+              .select('id')
+              .eq('email', widget.email)
+              .single();
+
           final student = await Supabase.instance.client
               .from('students')
               .select('id')
-              .eq('email', widget.email)
+              .eq('user_id', user['id'])
               .single();
 
           //check the coordinates to see proximit

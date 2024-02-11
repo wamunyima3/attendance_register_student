@@ -86,11 +86,18 @@ class _PasswordState extends State<Password> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
-      final lecturerId = await Supabase.instance.client
-          .from('lecturers')
+      final userId = await Supabase.instance.client
+          .from('user')
           .select('id')
           .eq('email', _lecturerEmail.text)
           .single();
+
+      final lecturerId = await Supabase.instance.client
+          .from('lecturers')
+          .select('id')
+          .eq('user_id', userId['id'])
+          .single();
+
       final response = await Supabase.instance.client
           .from('password')
           .select('password')
