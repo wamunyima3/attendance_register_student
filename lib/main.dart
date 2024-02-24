@@ -4,6 +4,8 @@ import 'package:attendance_register_student/password.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -72,6 +74,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
+              color: Colors.blue, // Match the color
             ),
           ),
           content: Column(
@@ -144,7 +147,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 'Close',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.blue,
+                  color: Colors.blue, // Match the color
                 ),
               ),
             ),
@@ -225,6 +228,53 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
+  void _showMessageWidget(
+    String message,
+    var messageIcon,
+    var messageIconColor,
+    Function action,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // Prevents dismissing the dialog by tapping outside
+      builder: (context) => AlertDialog(
+        title: Icon(
+          messageIcon,
+          size: 60,
+          color: messageIconColor,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                action(); // Invoke the function here
+              },
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.0),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.blue,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(fontSize: 20, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _onQRViewCreated(QRViewController controller) {
     setState(() {
       _controller = controller;
@@ -253,35 +303,65 @@ class _ScannerScreenState extends State<ScannerScreen> {
           //sample data
           final studentLocation = await getLocation(context);
 
-          double distanceInMeters = calculateDistance(
+          double distanceInMeters = Geolocator.distanceBetween(
               studentLocation['latitude'],
               studentLocation['longitude'],
               double.parse(keys[3]),
               double.parse(keys[4]));
 
+          print(distanceInMeters);
+
           double requiredDistance = double.parse(keys[2]);
 
           if (distanceInMeters > requiredDistance) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Nigga you are not in class'),
-                  //I can say nigga without freely because am black
+            _showMessageWidget(
+                'You are not in class', Icons.face_retouching_off, Colors.red,
+                () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ScannerScreen(email: widget.email),
                 ),
               );
-            }
-          } else {
-            await Supabase.instance.client.from('attendances').insert({
-              'date': keys[0],
-              'studentId': student['id'],
-              'registerId': keys[1],
-              'status': 'Present',
             });
+          } else {
+            List<Map<String, dynamic>> attendance = await Supabase
+                .instance.client
+                .from('attendances')
+                .select('*')
+                .eq('studentId', student['id'])
+                .eq('registerId', keys[1]);
 
-            _showSnackbar('Attendance Present');
+            if (attendance.isEmpty) {
+              await Supabase.instance.client.from('attendances').insert({
+                'date': keys[0],
+                'studentId': student['id'],
+                'registerId': keys[1],
+                'status': 'Present',
+              });
+              _showMessageWidget(
+                  'Attendance Present', Icons.check, Colors.green, () {
+                //exit app
+                SystemNavigator.pop();
+              });
+            } else {
+              _showMessageWidget('Already marked current attendance',
+                  Icons.tag_faces, Colors.green, () {
+                //exit app
+                SystemNavigator.pop();
+              });
+            }
           }
         } catch (e) {
-          _showSnackbar('Error while inserting data: $e');
+          _showMessageWidget(
+              'Error while marking attendance', Icons.info, Colors.red, () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ScannerScreen(email: widget.email),
+              ),
+            );
+          });
         }
       }
     });
@@ -297,43 +377,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
     if (_controller != null) {
       _controller!.toggleFlash();
     }
-  }
-
-  void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              message,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        duration: const Duration(seconds: 5),
-      ),
-    );
-  }
-
-  double calculateDistance(double latitude1, double longitude1,
-      double latitude2, double longitude2) {
-    var radianConversion = 0.017453292519943295;
-    var cosine = cos;
-    var deltaLatitude = latitude2 - latitude1;
-    var deltaLongitude = longitude2 - longitude1;
-    var angle = 0.5 -
-        cosine(deltaLatitude * radianConversion) / 2 +
-        cosine(latitude1 * radianConversion) *
-            cosine(latitude2 * radianConversion) *
-            (1 - cosine(deltaLongitude * radianConversion)) /
-            2;
-    // Convert distance from kilometers to meters
-    return 1000 * 12742 * asin(sqrt(angle));
   }
 
   @override

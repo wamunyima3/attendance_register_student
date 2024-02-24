@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:attendance_register_student/main.dart';
 import 'package:attendance_register_student/password.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -57,14 +57,25 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             const Text(
               'You are offline',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 _restartApp();
               },
-              child: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.0),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.blue,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text(
+                'Retry',
+                style: TextStyle(fontSize: 20, color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -136,13 +147,20 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.1,
-                child: const Image(
-                  image: AssetImage(
-                    'assets/attendance-logo.png',
+              ClipRRect(
+                borderRadius: BorderRadius.circular(50),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.2,
+                  child: const Image(
+                    image: AssetImage(
+                      'assets/attendance-logo.png',
+                    ),
                   ),
                 ),
+              ),
+              const SpinKitChasingDots(
+                color: Colors.white,
+                size: 80.0,
               ),
             ],
           ),
