@@ -41,17 +41,17 @@ Future<Map<String, dynamic>> getLocation(BuildContext context) async {
     Position position = await locationService.getCurrentLocation();
     double latitude = position.latitude;
     double longitude = position.longitude;
-    print('Latitude: $latitude, Longitude: $longitude');
+
     return {
       'latitude': latitude,
       'longitude': longitude,
     };
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error getting current location: $e'),
+      const SnackBar(
+        content: Text('Error getting current location'),
       ),
     );
-    return {'error': e.toString()};
+    return {'error': 'Error while getting location'};
   }
 }

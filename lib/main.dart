@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:attendance_register_student/location.dart';
 import 'package:attendance_register_student/password.dart';
 import 'package:attendance_register_student/splash.dart';
@@ -299,8 +298,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               .eq('user_id', user['id'])
               .single();
 
-          //check the coordinates to see proximit
-          //sample data
+
           final studentLocation = await getLocation(context);
 
           double distanceInMeters = Geolocator.distanceBetween(
@@ -308,8 +306,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
               studentLocation['longitude'],
               double.parse(keys[3]),
               double.parse(keys[4]));
-
-          print(distanceInMeters);
 
           double requiredDistance = double.parse(keys[2]);
 
