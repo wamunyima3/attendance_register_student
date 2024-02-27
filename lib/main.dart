@@ -298,14 +298,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
               .eq('user_id', user['id'])
               .single();
 
-
           final studentLocation = await getLocation(context);
 
+          print(
+              'studentLocation: $studentLocation \n lecturerLocation: lat: ${double.parse(keys[3])} long: ${double.parse(keys[4])}\n');
+
           double distanceInMeters = Geolocator.distanceBetween(
-              studentLocation['latitude'],
-              studentLocation['longitude'],
               double.parse(keys[3]),
-              double.parse(keys[4]));
+              double.parse(keys[4]),
+              studentLocation['latitude'],
+              studentLocation['longitude']);
+
+          print(distanceInMeters);
 
           double requiredDistance = double.parse(keys[2]);
 
@@ -326,7 +330,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 .from('attendances')
                 .select('*')
                 .eq('studentId', student['id'])
-                .eq('registerId', keys[1]);
+                .eq('registerId', keys[1])
+                .eq('date', keys[0]);
 
             if (attendance.isEmpty) {
               await Supabase.instance.client.from('attendances').insert({
@@ -341,8 +346,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 SystemNavigator.pop();
               });
             } else {
-              _showMessageWidget('Already marked current attendance',
-                  Icons.tag_faces, Colors.green, () {
+              _showMessageWidget(
+                  'Already marked', Icons.tag_faces, Colors.green, () {
                 //exit app
                 SystemNavigator.pop();
               });
