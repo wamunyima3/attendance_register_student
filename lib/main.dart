@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:attendance_register_student/login.dart';
+import 'package:attendance_register_student/scanner_overay.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -169,6 +170,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
           MobileScanner(
             controller: _controller,
             onDetect: _onDetect,
+            errorBuilder: (context, error, child) => Center(
+                child: Text(
+              error.toString(),
+              style: const TextStyle(color: Colors.red),
+            )),
+            overlayBuilder: (context, constraints) {
+              return ScannerOverlay(
+                overlaySize: MediaQuery.of(context).size.width * 0.8,
+              );
+            },
           ),
           Positioned(
             top: 40.0,
@@ -210,13 +221,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Text(
-                  widget.sid.toString(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.white
-                  )
-                ),
+                Text(widget.sid.toString(),
+                    style: const TextStyle(fontSize: 20, color: Colors.white)),
               ],
             ),
           ),
@@ -244,20 +250,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
       // Parse the JSON string
       Map<String, dynamic> jsonMap = jsonDecode(qrData);
 
-        var date = await Supabase.instance.client
+      var date = await Supabase.instance.client
           .from('ClassDate')
           .select('*')
           .eq('date', jsonMap['date'])
           .eq('cid', jsonMap['classId']);
 
-        if(date.isEmpty){
-          date = await Supabase.instance.client.from('ClassDate').insert({
-            'date': jsonMap['date'],
-            'cid': jsonMap['classId'],
-          }).select();
-        }
+      if (date.isEmpty) {
+        date = await Supabase.instance.client.from('ClassDate').insert({
+          'date': jsonMap['date'],
+          'cid': jsonMap['classId'],
+        }).select();
+      }
 
-        final attendance = await Supabase.instance.client
+      final attendance = await Supabase.instance.client
           .from('Attendance')
           .select('sid,Student(name)')
           .eq('sid', widget.sid)
@@ -270,7 +276,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           'sid': widget.sid,
           'cid': jsonMap['classId'],
           'status': 'present',
-          'comment':'Marked from phone'
+          'comment': 'Marked from phone'
         });
         _showMessageWidget('Attendance Present', Icons.check, Colors.green, () {
           SystemNavigator.pop();
