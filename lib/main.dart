@@ -1,13 +1,10 @@
 import 'dart:convert';
 
-import 'package:attendance_register_student/location.dart';
 import 'package:attendance_register_student/login.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -167,27 +164,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Attendance Register',
-          style: TextStyle(color: Colors.blue),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(
-              Icons.logout,
-              color: Colors.blue,
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              _showAboutDialog(context);
-            },
-            icon: const Icon(Icons.info, color: Colors.blue),
-          )
-        ],
-      ),
       body: Stack(
         children: [
           MobileScanner(
@@ -210,6 +186,36 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   icon: const Icon(Icons.flash_on),
                   onPressed: () => _controller.toggleTorch(),
                   color: Colors.white,
+                ),
+                IconButton(
+                  onPressed: _logout,
+                  icon: const Icon(
+                    Icons.logout,
+                    color: Colors.red,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    _showAboutDialog(context);
+                  },
+                  icon: const Icon(Icons.info, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 40.0,
+            left: 24.0,
+            right: 16.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  widget.sid.toString(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    color: Colors.white
+                  )
                 ),
               ],
             ),
