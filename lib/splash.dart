@@ -1,8 +1,7 @@
+import 'package:attendance_register_student/login.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:attendance_register_student/main.dart';
-import 'package:attendance_register_student/password.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -85,41 +84,32 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _redirect() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String storedEmail = prefs.getString('user_email') ?? 'No email';
+    int storedSid = prefs.getInt('user_sid') ?? 0;
 
-    if (storedEmail != 'No email') {
-      final user = await Supabase.instance.client
-          .from('user')
-          .select('is_logedIn')
-          .eq('email', storedEmail)
-          .single();
+    if (storedSid != 0) {
 
-      if (user.isNotEmpty && user['is_logedIn'] == true) {
-        if (mounted) {
-          _navigateToScannerScreen(storedEmail);
+      if (mounted) {
+          _navigateToScannerScreen(storedSid);
         }
       } else {
-        _navigateToPassword();
+        _navigateToLogin();
       }
-    } else {
-      _navigateToPassword();
-    }
   }
 
-  void _navigateToScannerScreen(String email) {
+  void _navigateToScannerScreen(int sid) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => ScannerScreen(email: email),
+        builder: (context) => ScannerScreen(sid: sid),
       ),
     );
   }
 
-  void _navigateToPassword() {
+  void _navigateToLogin() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const Password(),
+        builder: (context) => const LoginPage(),
       ),
     );
   }

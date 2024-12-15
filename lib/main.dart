@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:attendance_register_student/location.dart';
-import 'package:attendance_register_student/password.dart';
+import 'package:attendance_register_student/login.dart';
 import 'package:attendance_register_student/splash.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:intl/intl.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -38,27 +42,25 @@ class MyApp extends StatelessWidget {
 }
 
 class ScannerScreen extends StatefulWidget {
-  final String email;
+  final int sid;
 
-  const ScannerScreen({Key? key, required this.email}) : super(key: key);
+  const ScannerScreen({Key? key, required this.sid}) : super(key: key);
 
   @override
-  _ScannerScreenState createState() => _ScannerScreenState();
+  State<ScannerScreen> createState() => _ScannerScreenState();
 }
 
 class _ScannerScreenState extends State<ScannerScreen> {
-  final GlobalKey _qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? _controller;
+  MobileScannerController _controller = MobileScannerController();
   bool _firstScanDetected = false;
 
   void _logout() async {
-    await Supabase.instance.client
-        .from('user')
-        .update({'is_logedIn': false}).eq('email', widget.email);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.clear();
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const Password()),
+        MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     }
   }
@@ -186,45 +188,104 @@ class _ScannerScreenState extends State<ScannerScreen> {
           )
         ],
       ),
-      body: OrientationBuilder(
-        builder: (context, orientation) {
-          return Stack(
-            children: <Widget>[
-              QRView(
-                key: _qrKey,
-                onQRViewCreated: _onQRViewCreated,
-                overlay: QrScannerOverlayShape(
-                  borderRadius: 10,
-                  borderLength: 20,
-                  borderWidth: 10,
-                  cutOutSize: MediaQuery.of(context).size.width * 0.8,
+      body: Stack(
+        children: [
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+          ),
+          Positioned(
+            top: 40.0,
+            left: 16.0,
+            right: 16.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.flip_camera_android),
+                  onPressed: () => _controller.switchCamera(),
+                  color: Colors.white,
                 ),
-              ),
-              Positioned(
-                top: 40.0,
-                left: 16.0,
-                right: 16.0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.flip_camera_android),
-                      onPressed: _flipCamera,
-                      color: Colors.white,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.flash_on),
-                      onPressed: _toggleFlash,
-                      color: Colors.white,
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.flash_on),
+                  onPressed: () => _controller.toggleTorch(),
+                  color: Colors.white,
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _onDetect(BarcodeCapture capture) async {
+    if (!_firstScanDetected) {
+      _firstScanDetected = true;
+      final List<Barcode> barcodes = capture.barcodes;
+      for (final barcode in barcodes) {
+        if (barcode.rawValue != null) {
+          await _processQRCode(barcode.rawValue!);
+        }
+      }
+    }
+  }
+
+  Future<void> _processQRCode(String qrData) async {
+    _controller.stop();
+
+    try {
+      // Parse the JSON string
+      Map<String, dynamic> jsonMap = jsonDecode(qrData);
+
+        var date = await Supabase.instance.client
+          .from('ClassDate')
+          .select('*')
+          .eq('date', jsonMap['date'])
+          .eq('cid', jsonMap['classId']);
+
+        if(date.isEmpty){
+          date = await Supabase.instance.client.from('ClassDate').insert({
+            'date': jsonMap['date'],
+            'cid': jsonMap['classId'],
+          }).select();
+        }
+
+        final attendance = await Supabase.instance.client
+          .from('Attendance')
+          .select('sid,Student(name)')
+          .eq('sid', widget.sid)
+          .eq('did', date[0]['id'])
+          .eq('cid', jsonMap['classId']);
+
+      if (attendance.isEmpty) {
+        await Supabase.instance.client.from('Attendance').insert({
+          'did': date[0]['id'],
+          'sid': widget.sid,
+          'cid': jsonMap['classId'],
+          'status': 'present',
+          'comment':'Marked from phone'
+        });
+        _showMessageWidget('Attendance Present', Icons.check, Colors.green, () {
+          SystemNavigator.pop();
+        });
+      } else {
+        _showMessageWidget('Already marked', Icons.tag_faces, Colors.green, () {
+          SystemNavigator.pop();
+        });
+      }
+    } catch (e) {
+      print("Error while marking attendance $e");
+      _showMessageWidget(
+          'Error while marking attendance', Icons.info, Colors.red, () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScannerScreen(sid: widget.sid),
+          ),
+        );
+      });
+    }
   }
 
   void _showMessageWidget(
@@ -274,115 +335,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    setState(() {
-      _controller = controller;
-    });
-
-    _controller!.scannedDataStream.listen((scanData) async {
-      if (!_firstScanDetected) {
-        _firstScanDetected = true;
-        _controller?.pauseCamera();
-
-        try {
-          List<String> keys = scanData.code!.split('\n');
-          final user = await Supabase.instance.client
-              .from('user')
-              .select('id')
-              .eq('email', widget.email)
-              .single();
-
-          final student = await Supabase.instance.client
-              .from('students')
-              .select('id')
-              .eq('user_id', user['id'])
-              .single();
-
-          final studentLocation = await getLocation(context);
-
-          print(
-              'studentLocation: $studentLocation \n lecturerLocation: lat: ${double.parse(keys[3])} long: ${double.parse(keys[4])}\n');
-
-          double distanceInMeters = Geolocator.distanceBetween(
-              double.parse(keys[3]),
-              double.parse(keys[4]),
-              studentLocation['latitude'],
-              studentLocation['longitude']);
-
-          print(distanceInMeters);
-
-          double requiredDistance = double.parse(keys[2]);
-
-          if (distanceInMeters > requiredDistance) {
-            _showMessageWidget(
-                'You are not in class', Icons.face_retouching_off, Colors.red,
-                () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ScannerScreen(email: widget.email),
-                ),
-              );
-            });
-          } else {
-            List<Map<String, dynamic>> attendance = await Supabase
-                .instance.client
-                .from('attendances')
-                .select('*')
-                .eq('studentId', student['id'])
-                .eq('registerId', keys[1])
-                .eq('date', keys[0]);
-
-            if (attendance.isEmpty) {
-              await Supabase.instance.client.from('attendances').insert({
-                'date': keys[0],
-                'studentId': student['id'],
-                'registerId': keys[1],
-                'status': 'Present',
-              });
-              _showMessageWidget(
-                  'Attendance Present', Icons.check, Colors.green, () {
-                //exit app
-                SystemNavigator.pop();
-              });
-            } else {
-              _showMessageWidget(
-                  'Already marked', Icons.tag_faces, Colors.green, () {
-                //exit app
-                SystemNavigator.pop();
-              });
-            }
-          }
-        } catch (e) {
-          _showMessageWidget(
-              'Error while marking attendance', Icons.info, Colors.red, () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ScannerScreen(email: widget.email),
-              ),
-            );
-          });
-        }
-      }
-    });
-  }
-
-  void _flipCamera() {
-    if (_controller != null) {
-      _controller!.flipCamera();
-    }
-  }
-
-  void _toggleFlash() {
-    if (_controller != null) {
-      _controller!.toggleFlash();
-    }
-  }
-
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 }

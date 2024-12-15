@@ -3,20 +3,18 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:attendance_register_student/main.dart';
-import 'package:attendance_register_student/register.dart';
 
 class LoginPage extends StatefulWidget {
-  final int lecturerId;
-  const LoginPage({Key? key, required this.lecturerId}) : super(key: key);
+  const LoginPage({Key? key}) : super(key: key);
 
   @override
   _LoginPageState createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _sidController = TextEditingController();
   bool isLoading = false;
-  bool _emailFieldFocused = false;
+  bool _sidFieldFocused = false;
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +39,10 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(
                     width: MediaQuery.of(context).size.width * 0.9,
                     child: TextField(
-                      controller: _emailController,
+                      controller: _sidController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        hintText: 'Email',
+                        hintText: 'Student ID',
                         hintStyle: const TextStyle(
                             color: Colors.black), // Hint text color
                         border: OutlineInputBorder(
@@ -57,18 +55,18 @@ class _LoginPageState extends State<LoginPage> {
                         labelStyle:
                             const TextStyle(color: Colors.blue), // Text color
                         prefixIcon: const Icon(
-                          Icons.email,
+                          Icons.person,
                           color: Colors.blue, // Icon color
                         ),
-                        errorText: _emailFieldFocused &&
-                                !_isValidEmail(_emailController.text)
-                            ? 'Invalid email'
+                        errorText: _sidFieldFocused &&
+                                !_isValidSid(_sidController.text)
+                            ? 'Invalid id'
                             : null,
                       ),
                       onSubmitted: (_) => _login(),
                       onChanged: (_) {
                         setState(() {
-                          _emailFieldFocused = true;
+                          _sidFieldFocused = true;
                         });
                       },
                     ),
@@ -77,7 +75,11 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(
                     width: MediaQuery.of(context).size.width * 0.9,
                     child: ElevatedButton(
-                      onPressed: isLoading ? null : _login,
+                      onPressed: !_isValidSid(_sidController.text)
+                          ? null
+                          : isLoading
+                              ? null
+                              : _login,
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
@@ -93,20 +95,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account? ",
-                          style: TextStyle(color: Colors.blue)), // Text color
-                      TextButton(
-                        onPressed: _navigateToRegistration,
-                        child: const Text(
-                          "Sign Up",
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      )
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -127,11 +115,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _login() async {
-    if (_emailController.text.isEmpty) {
+    if (_sidController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please enter an email',
+            'Please enteryour student ID',
             style: TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.red,
@@ -147,21 +135,20 @@ class _LoginPageState extends State<LoginPage> {
       isLoading = true;
     });
 
-    final email = _emailController.text;
+    final sid = int.parse(_sidController.text);
 
     try {
       final user = await Supabase.instance.client
-          .from('user')
+          .from('Student')
           .select('*')
-          .eq('email', email)
-          .single();
+          .eq('sid', sid);
 
       if (user.isEmpty) {
-        _showErrorSnackBar('Invalid Email');
-        throw 'Invalid Email or Register';
+        _showErrorSnackBar('Not registered');
+        throw 'You are not registered in any class, see you lecturer';
       } else {
-        _storeEmailInPreferences(email);
-        _navigateToScannerScreen(email);
+        _storeSidInPreferences(sid);
+        _navigateToScannerScreen(sid);
       }
     } catch (e) {
       _showErrorSnackBar('Error Signing in Check Credentials');
@@ -172,29 +159,15 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _storeEmailInPreferences(String email) async {
+  void _storeSidInPreferences(int sid) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('user_email', email);
-
-    //update is logged in
-    await Supabase.instance.client
-        .from('user')
-        .update({'is_loggedIn': true}).eq('email', email);
+    prefs.setInt('user_sid', sid);
   }
 
-  void _navigateToScannerScreen(String email) {
+  void _navigateToScannerScreen(int sid) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => ScannerScreen(email: email),
-      ),
-    );
-  }
-
-  void _navigateToRegistration() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RegistrationPage(lecturerId: widget.lecturerId),
+        builder: (context) => ScannerScreen(sid: sid),
       ),
     );
   }
@@ -208,9 +181,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  bool _isValidEmail(String email) {
-    // Regular expression for email validation
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
+  bool _isValidSid(String sid) {
+    final emailRegex = RegExp(r'^\d{7}$');
+    return emailRegex.hasMatch(sid);
   }
 }
