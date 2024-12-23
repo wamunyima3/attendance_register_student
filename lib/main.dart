@@ -120,7 +120,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
-                          _launchURL('https://portfolio-wamunyima.vercel.app');
+                          _launchURL('https://wamunyimamukelabai.vercel.app/');
                         },
                     ),
                   ],
